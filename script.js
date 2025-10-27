@@ -4,8 +4,23 @@
 // Configuration
 const ROWS = 9;
 const COLS = 15;
-const WAVE_TARGET = 15; // survive this many waves to win
-const POLLUTED_LIMIT = 8; // too many polluted drops -> lose
+// these will be adjusted by difficulty selection
+let WAVE_TARGET = 15; // survive this many waves to win
+let POLLUTED_LIMIT = 8; // too many polluted drops -> lose
+
+// Difficulty configurations - meaningful changes to win condition, tolerance, spawn speed and starting coins
+const difficultyConfigs = {
+  easy:  { waveTarget: 10, pollutedLimit: 12, spawnSpeed: 0.85, startingCoins: 14, waveTimeLimit: 90 },
+  normal:{ waveTarget: 15, pollutedLimit: 8,  spawnSpeed: 1.0,  startingCoins: 10, waveTimeLimit: 60 },
+  hard:  { waveTarget: 20, pollutedLimit: 6,  spawnSpeed: 1.25, startingCoins: 8,  waveTimeLimit: 45 }
+};
+
+let selectedDifficulty = 'normal';
+let spawnSpeedMultiplier = 1.0; // used to alter spawn intervals (higher => faster spawning)
+let startingCoins = 10;
+let waveTimeLimit = 60; // seconds allowed per wave before penalty (adjusted by difficulty)
+let waveTimerSeconds = 0;
+let waveTimerIntervalId = null;
 
 // Game state
 let gridEl;
@@ -30,6 +45,7 @@ let endTitle, endMsg, restartBtn, toTitleBtn;
 let waveEl, scoreEl, coinsEl, pollutedEl;
 let startWaveBtn, autoWaveBtn;
 let autoWave = true; // whether waves start automatically
+let difficultyDisplayEl, timerDisplayEl;
 
 // Wait until DOM is ready to query elements
 window.addEventListener('DOMContentLoaded', () => {
@@ -51,12 +67,34 @@ window.addEventListener('DOMContentLoaded', () => {
   pollutedEl = document.getElementById('polluted');
   startWaveBtn = document.getElementById('startWaveBtn');
   autoWaveBtn = document.getElementById('autoWaveBtn');
+  timerDisplayEl = document.getElementById('timerDisplay');
+  difficultyDisplayEl = document.getElementById('difficultyDisplay');
   const howtoCloseBtn = document.getElementById('howtoClose');
 
   if (howtoCloseBtn) howtoCloseBtn.addEventListener('click', () => {
     const howto = document.getElementById('howto');
     if (howto) howto.classList.add('hidden');
   });
+
+  // Difficulty buttons - allow choosing mode on title screen
+  const diffBtns = document.querySelectorAll('.diffBtn');
+  diffBtns.forEach(b => {
+    b.addEventListener('click', (ev) => {
+      diffBtns.forEach(x => x.classList.remove('selected'));
+      ev.currentTarget.classList.add('selected');
+      selectedDifficulty = ev.currentTarget.dataset.diff || 'normal';
+      if (difficultyDisplayEl) difficultyDisplayEl.textContent = capitalize(selectedDifficulty);
+    });
+  });
+
+  // Logo interaction: click to rotate slightly
+  const logo = document.getElementById('siteLogo');
+  if (logo) {
+    logo.addEventListener('click', () => {
+      logo.classList.add('rotating');
+      setTimeout(() => logo.classList.remove('rotating'), 650);
+    });
+  }
 
   if (startWaveBtn) startWaveBtn.addEventListener('click', startNextWaveManual);
   if (autoWaveBtn) autoWaveBtn.addEventListener('click', toggleAutoWave);
@@ -271,6 +309,8 @@ function attachButtons() {
 
 // start the game
 function startGame() {
+  // apply chosen difficulty then reset state
+  applySelectedDifficulty();
   resetGame();
   // hide the how-to/help panel once the player starts the game
   const howto = document.getElementById('howto');
@@ -283,6 +323,22 @@ function startGame() {
   }
 }
 
+// Apply difficulty settings to global game variables
+function applySelectedDifficulty() {
+  const cfg = difficultyConfigs[selectedDifficulty] || difficultyConfigs.normal;
+  WAVE_TARGET = cfg.waveTarget;
+  POLLUTED_LIMIT = cfg.pollutedLimit;
+  spawnSpeedMultiplier = cfg.spawnSpeed;
+  startingCoins = cfg.startingCoins;
+  waveTimeLimit = cfg.waveTimeLimit;
+  // show current selection in HUD if present
+  const dd = document.getElementById('difficultyDisplay');
+  if (dd) dd.textContent = capitalize(selectedDifficulty);
+}
+
+// small helper
+function capitalize(s) { return String(s || '').charAt(0).toUpperCase() + String(s || '').slice(1); }
+
 // reset state
 function resetGame() {
   // Clear any existing intervals first
@@ -291,7 +347,7 @@ function resetGame() {
   // Reset all game state
   wave = 0;
   score = 0;
-  coins = 10;
+  coins = startingCoins || 10;
   health = 100;
   polluted = 0;
   drops = [];
@@ -311,6 +367,8 @@ function clearIntervals() {
   if (stepIntervalId) clearInterval(stepIntervalId);
   spawnIntervalId = null;
   stepIntervalId = null;
+  if (waveTimerIntervalId) clearInterval(waveTimerIntervalId);
+  waveTimerIntervalId = null;
 }
 
 // stop game (used when returning to title)
@@ -329,6 +387,28 @@ function nextWave() {
   let spawned = 0;
   spawning = true;
 
+  // compute spawn interval and apply difficulty multiplier
+  const baseInterval = (wave <= 10 ? 1100 : 700);
+  const intervalMs = Math.max(120, Math.round(baseInterval / spawnSpeedMultiplier));
+
+  // reset wave timer each wave
+  waveTimerSeconds = 0;
+  if (waveTimerIntervalId) clearInterval(waveTimerIntervalId);
+  waveTimerIntervalId = setInterval(() => {
+    waveTimerSeconds += 1;
+    if (timerDisplayEl) timerDisplayEl.textContent = `${waveTimerSeconds}s`;
+    if (waveTimerSeconds >= (waveTimeLimit || 60)) {
+      // time penalty: small health reduction and visual feedback, then reset wave timer
+      health = Math.max(0, health - 5);
+      flashCell(path[path.length - 1], 'orange');
+      waveTimerSeconds = 0;
+      updateUI();
+      if (health <= 0) {
+        endGame(false);
+      }
+    }
+  }, 1000);
+
   spawnIntervalId = setInterval(() => {
     if (spawned >= spawnCount) {
       spawning = false;
@@ -338,7 +418,7 @@ function nextWave() {
     }
     spawnDrop();
     spawned += 1;
-  }, wave <= 10 ? 1100 : 700); // Slower spawns in early waves (first 10)
+  }, intervalMs); // spawn interval respects difficulty multiplier
 }
 
 // Manual start for next wave (used when autoWave is off)
@@ -385,17 +465,40 @@ function renderDrops() {
     if (idx == null) continue;
     const el = document.createElement('div');
     el.className = 'drop';
+    el.dataset.dropId = String(drop.id);
     // Add classes for damaged vs cleaned
     if (drop.cleaned) {
       el.classList.add('cleaned');
     } else if (drop.maxHp && drop.hp < drop.maxHp) {
       el.classList.add('damaged');
     }
-  // targeted feedback
-  if (drop.targeted) el.classList.add('targeted');
+    // targeted feedback
+    if (drop.targeted) el.classList.add('targeted');
     // transient damage animation
     if (drop.wasDamaged) el.classList.add('hit-anim');
     el.title = `HP ${drop.hp}`;
+
+    // clicking a drop manually cleans it and grants a small reward
+    el.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      const id = ev.currentTarget.dataset.dropId;
+      const d = drops.find(x => String(x.id) === id);
+      if (!d) return;
+      if (!d.cleaned) {
+        d.cleaned = true;
+        score += 6;
+        coins += 3;
+        playCleanSound();
+      }
+      // animate then remove
+      ev.currentTarget.classList.add('clicked');
+      setTimeout(() => {
+        d.toRemove = true;
+        renderDrops();
+        updateUI();
+      }, 300);
+    });
+
     cells[idx].appendChild(el);
   }
 }
@@ -533,6 +636,7 @@ function gameStep() {
 function updateUI() {
   waveEl.textContent = `${wave}`;
   scoreEl.textContent = `${score}`;
+  if (timerDisplayEl) timerDisplayEl.textContent = `${waveTimerSeconds}s`;
   coinsEl.textContent = `${coins}`;
   // Some HUD elements may not exist (polluted was removed). Update defensively.
   if (typeof pollutedEl !== 'undefined' && pollutedEl && pollutedEl !== null) {

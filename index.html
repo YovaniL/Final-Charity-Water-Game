@@ -4,6 +4,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Charity Water Game</title>
+  <!-- Use a webfont that closely resembles charity: water brand (Poppins as a clean, friendly sans) -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -32,6 +34,13 @@
           </ul>
         </div>
       </div>
+      <!-- Difficulty selector - choose before starting -->
+      <div class="difficulty-row">
+        <label>Difficulty:</label>
+        <button class="diffBtn" data-diff="easy">Easy</button>
+        <button class="diffBtn selected" data-diff="normal">Normal</button>
+        <button class="diffBtn" data-diff="hard">Hard</button>
+      </div>
       <button id="startBtn" class="primary-button">Start Defending!</button>
     </div>
   </div>
@@ -41,10 +50,13 @@
     <section id="hud" aria-hidden="false">
       <div>Wave: <span id="wave">0</span></div>
       <div>Score: <span id="score">0</span></div>
+      <div>Time: <span id="timerDisplay">0s</span></div>
       <div>
         <button id="cheerBtn" class="small">Cheer +1</button>
       </div>
       <div>Coins: <span id="coins">0</span></div>
+      <div>Polluted: <span id="polluted">0</span></div>
+      <div>Mode: <span id="difficultyDisplay">Normal</span></div>
       <div class="wave-controls">
         <button id="autoWaveBtn" class="small">Auto: On</button>
       </div>
@@ -123,5 +135,14 @@
   </div>
 
   <script src="script.js"></script>
+  <!-- Footer: charity: water links (open in new tab) -->
+  <footer class="cw-footer">
+    <div class="links">
+      <img src="assets/img/cw_logo_horizontal.png" alt="charity: water" style="height:28px; opacity:0.95;">
+      <a href="https://www.charitywater.org/" target="_blank" rel="noopener">charity: water</a>
+      <a href="https://www.charitywater.org/donate" target="_blank" rel="noopener">Donate</a>
+    </div>
+    <div style="font-size:13px; color:#555;">Thank you for learning while supporting clean water causes.</div>
+  </footer>
 </body>
 </html>
