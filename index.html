@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Charity Water Game</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Header -->
+  <header id="titleBar">
+    <img id="siteLogo" src="assets/img/cw_logo_horizontal.png" alt="Charity Water logo">
+    <h1>Water Defense</h1>
+    <p id="subtitle">Protect the village and bring clean water</p>
+  </header>
+
+  <!-- wireframe preview removed -->
+
+  <!-- Start overlay / Title screen -->
+  <div id="startOverlay" class="overlay">
+    <div class="panel title-panel">
+      <h2>Water Defense</h2>
+      <div class="game-intro">
+        <p class="tagline">Protect your village's water supply!</p>
+        <div class="instructions">
+          <h3>How to Play:</h3>
+          <ul>
+            <li>💧 Stop polluted water (green) from reaching the village</li>
+            <li>🏗️ Build towers to clean the water (turns blue when hit)</li>
+            <li>💰 Start with 10 coins - Basic tower costs 10</li>
+            <li>⭐ Survive 15 waves for a special celebration!</li>
+          </ul>
+        </div>
+      </div>
+      <button id="startBtn" class="primary-button">Start Defending!</button>
+    </div>
+  </div>
+
+  <!-- Game UI -->
+  <main id="gameUI" class="hidden" role="application" aria-label="Charity Water Game UI">
+    <section id="hud" aria-hidden="false">
+      <div>Wave: <span id="wave">0</span></div>
+      <div>Score: <span id="score">0</span></div>
+      <div>
+        <button id="cheerBtn" class="small">Cheer +1</button>
+      </div>
+      <div>Coins: <span id="coins">0</span></div>
+      <div class="wave-controls">
+        <button id="autoWaveBtn" class="small">Auto: On</button>
+      </div>
+      <!-- Separate start button so it can be placed independently -->
+      <div class="wave-start">
+        <button id="startWaveBtn" class="small hidden">Start Wave</button>
+      </div>
+      <div class="health-container">
+        Village Health:
+        <div class="health-bar">
+          <div id="healthFill" class="health-fill"></div>
+        </div>
+        <span id="health">100</span>/100
+      </div>
+    </section>
+
+    <!-- Small how-to help that mirrors the wireframe notes (moved into sidebar) -->
+
+    <section id="content">
+      <aside id="sidebar" aria-label="Tower palette">
+        <!-- How-to placed above the towers -->
+        <section id="howto" class="helpPanel">
+          <button id="howtoClose" class="closeBtn" aria-label="Close how to panel">✕</button>
+          <h3>How to play</h3>
+          <ol>
+            <li>Select a tower on the left.</li>
+            <li>Click an empty cell (not the path) to place it.</li>
+            <li>Upgrade towers by clicking them.</li>
+            <li>Stop dirty drops from reaching the village.</li>
+          </ol>
+        </section>
+        <h3>Towers</h3>
+        <div class="towerCard" data-tower-type="basic">
+          <div class="name">Basic</div>
+          <div>Cost: <span class="cost">10</span></div>
+          <div>Level: <span class="level">1</span></div>
+          <button class="selectTowerBtn">Select</button>
+        </div>
+
+        <div class="towerCard" data-tower-type="slow">
+          <div class="name">Slow</div>
+          <div>Cost: <span class="cost">10</span></div>
+          <div>Level: <span class="level">1</span></div>
+          <button class="selectTowerBtn">Select</button>
+        </div>
+
+        <button id="backToTitle">Back to Title</button>
+      </aside>
+
+      <section id="mapArea" aria-label="Game map">
+        <!-- The grid will be built by script.js -->
+        <div id="grid" aria-label="Game grid"></div>
+      </section>
+    </section>
+  </main>
+
+  <!-- End overlay -->
+  <div id="endOverlay" class="overlay hidden">
+    <div class="panel">
+      <h2 id="endTitle">GAME OVER</h2>
+      <p id="endMsg"></p>
+      <button id="restartBtn">Restart</button>
+      <button id="toTitleBtn">Title Screen</button>
+    </div>
+  </div>
+
+  <!-- Wave 10 celebration overlay -->
+  <div id="celebrationOverlay" class="overlay hidden">
+    <div class="panel celebration">
+      <h2>Amazing Progress!</h2>
+      <p>You've reached Wave 10! The village is getting cleaner water thanks to your help.</p>
+      <p>Want to keep defending the village?</p>
+      <button id="continueBtn">Continue Playing</button>
+      <button id="celebrationRestartBtn">Start Fresh</button>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
