@@ -46,6 +46,18 @@ let waveEl, scoreEl, coinsEl, pollutedEl;
 let startWaveBtn, autoWaveBtn;
 let autoWave = true; // whether waves start automatically
 let difficultyDisplayEl, timerDisplayEl;
+let milestoneMsgEl;
+
+// Milestones: array of objects with score threshold and message.
+// This demonstrates use of arrays, conditionals, and state tracking.
+const milestones = [
+  { score: 20, title: 'First Steps', msg: "Nice! You've cleaned 20 points — keep going!" },
+  { score: 50, title: 'Helping Hands', msg: "Great work — 50 points. The village thanks you!" },
+  { score: 100, title: 'Community Hero', msg: "Amazing! 100 points — you're making a real difference." },
+  { score: 200, title: 'Water Champion', msg: "Incredible — 200 points! The village is thriving." }
+];
+// Track which milestones we've already shown to avoid repeats
+const achievedMilestones = new Set();
 
 // Wait until DOM is ready to query elements
 window.addEventListener('DOMContentLoaded', () => {
@@ -69,6 +81,7 @@ window.addEventListener('DOMContentLoaded', () => {
   autoWaveBtn = document.getElementById('autoWaveBtn');
   timerDisplayEl = document.getElementById('timerDisplay');
   difficultyDisplayEl = document.getElementById('difficultyDisplay');
+  milestoneMsgEl = document.getElementById('milestoneMsg');
   const howtoCloseBtn = document.getElementById('howtoClose');
 
   if (howtoCloseBtn) howtoCloseBtn.addEventListener('click', () => {
@@ -452,6 +465,37 @@ function spawnDrop() {
   renderDrops();
 }
 
+// Show a transient milestone message in the HUD
+function showMilestone(title, message) {
+  if (!milestoneMsgEl) return;
+  milestoneMsgEl.textContent = `${title} — ${message}`;
+  milestoneMsgEl.classList.remove('hidden');
+  // trigger visible class for animation
+  requestAnimationFrame(() => milestoneMsgEl.classList.add('visible'));
+  // hide after a few seconds
+  setTimeout(() => {
+    if (!milestoneMsgEl) return;
+    milestoneMsgEl.classList.remove('visible');
+    // wait for transition then hide completely
+    setTimeout(() => milestoneMsgEl.classList.add('hidden'), 300);
+  }, 3500);
+}
+
+// Check milestones against current score and award/notify once
+function checkMilestones() {
+  for (const m of milestones) {
+    if (score >= m.score && !achievedMilestones.has(m.score)) {
+      achievedMilestones.add(m.score);
+  // award a small coin bonus for hitting milestone
+  coins += 5;
+  // notify player
+  showMilestone(m.title, m.msg);
+  // update coins display quickly without re-entering updateUI to avoid recursion
+  if (coinsEl) coinsEl.textContent = `${coins}`;
+    }
+  }
+}
+
 // draw drops into grid cells
 function renderDrops() {
   // clear previous drop DOM nodes
@@ -660,7 +704,12 @@ function updateUI() {
       healthFill.style.background = getComputedStyle(document.documentElement).getPropertyValue('--cw-dark-green') || '#4FCB53';
     }
   }
+    // After updating basic UI, check milestones (will only notify once per milestone)
+    checkMilestones();
 }
+
+  // After updating basic UI, check milestones (will only notify once per milestone)
+  checkMilestones();
 
 // end the game and show overlay
 function endGame(victory) {
